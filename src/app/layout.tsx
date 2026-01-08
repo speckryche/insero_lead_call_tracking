@@ -20,7 +20,7 @@ export default function RootLayout({
         <nav className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <Image src="/logo.png" alt="Logo" width={40} height={40} />
+              <Image src="/logo.png" alt="Logo" width={80} height={80} />
               <span className="text-xl font-bold text-gray-900">Sales Call Tracker</span>
             </Link>
             <div className="flex gap-6">
