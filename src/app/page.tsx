@@ -1,0 +1,140 @@
+import Link from 'next/link';
+import { getLeads, getStats } from '@/lib/actions';
+import { LeadFilters } from '@/components/LeadFilters';
+
+export const dynamic = 'force-dynamic';
+
+type SearchParams = Promise<{ search?: string; status?: string }>;
+
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const search = params.search || '';
+  const status = params.status || 'all';
+
+  const [leads, stats] = await Promise.all([getLeads(search, status), getStats()]);
+
+  const statusColors: Record<string, string> = {
+    new: 'bg-blue-100 text-blue-800',
+    contacted: 'bg-yellow-100 text-yellow-800',
+    meeting_set: 'bg-green-100 text-green-800',
+    not_interested: 'bg-gray-100 text-gray-800',
+  };
+
+  const statusLabels: Record<string, string> = {
+    new: 'New',
+    contacted: 'Contacted',
+    meeting_set: 'Meeting Set',
+    not_interested: 'Not Interested',
+  };
+
+  return (
+    <div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-sm text-gray-500">Total Leads</div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
+          <div className="text-sm text-gray-500">New</div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-yellow-600">{stats.contacted}</div>
+          <div className="text-sm text-gray-500">Contacted</div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-green-600">{stats.meetingSet}</div>
+          <div className="text-sm text-gray-500">Meeting Set</div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-gray-600">{stats.notInterested}</div>
+          <div className="text-sm text-gray-500">Not Interested</div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <LeadFilters currentSearch={search} currentStatus={status} />
+
+      {/* Leads Table */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {leads.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <p className="mb-4">No leads found.</p>
+            <Link
+              href="/import"
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Import your first CSV →
+            </Link>
+          </div>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Company
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Location
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {leads.map((lead) => (
+                <tr key={lead.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-gray-900">
+                      {lead.companyName}
+                    </div>
+                    <div className="text-sm text-gray-500">{lead.primaryIndustry}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-gray-900">
+                      {lead.firstName} {lead.lastName}
+                    </div>
+                    <div className="text-sm text-gray-500">{lead.jobTitle}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-gray-900">{lead.companyCity}</div>
+                    <div className="text-sm text-gray-500">{lead.companyState}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        statusColors[lead.status] || statusColors.new
+                      }`}
+                    >
+                      {statusLabels[lead.status] || lead.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Link
+                      href={`/leads/${lead.id}`}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      View →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
