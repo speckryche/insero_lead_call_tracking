@@ -1,8 +1,18 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getLeads, getStats } from '@/lib/actions';
 import { LeadFilters } from '@/components/LeadFilters';
+import { getUser } from '@/lib/auth-actions';
 
 export const dynamic = 'force-dynamic';
+
+async function requireAuth() {
+  const user = await getUser();
+  if (!user) {
+    redirect('/login');
+  }
+  return user;
+}
 
 type SearchParams = Promise<{ search?: string; status?: string; sort?: string }>;
 
@@ -11,6 +21,7 @@ export default async function Dashboard({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAuth();
   const params = await searchParams;
   const search = params.search || '';
   const status = params.status || 'all';
@@ -36,7 +47,6 @@ export default async function Dashboard({
 
   return (
     <div>
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
@@ -64,18 +74,13 @@ export default async function Dashboard({
         </div>
       </div>
 
-      {/* Filters */}
       <LeadFilters currentSearch={search} currentStatus={status} currentSort={sort} />
 
-      {/* Leads Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto">
         {leads.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <p className="mb-4">No leads found.</p>
-            <Link
-              href="/import"
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
+            <Link href="/import" className="text-blue-600 hover:text-blue-800 font-medium">
               Import your first CSV →
             </Link>
           </div>
@@ -83,70 +88,39 @@ export default async function Dashboard({
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  City
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Emp
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Loc
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Emp</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loc</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {leads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">
-                      {lead.companyName}
-                    </div>
+                    <div className="font-medium text-gray-900">{lead.companyName}</div>
                     <div className="text-xs text-gray-500">{lead.primaryIndustry}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-gray-900">
-                      {lead.firstName} {lead.lastName}
-                    </div>
+                    <div className="text-gray-900">{lead.firstName} {lead.lastName}</div>
                     <div className="text-xs text-gray-500">{lead.jobTitle}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-gray-900">{lead.companyCity}</div>
                     <div className="text-xs text-gray-500">{lead.companyState}</div>
                   </td>
-                  <td className="px-4 py-3 text-gray-900">
-                    {lead.employees || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-900">
-                    {lead.numberOfLocations || '-'}
-                  </td>
+                  <td className="px-4 py-3 text-gray-900">{lead.employees || '-'}</td>
+                  <td className="px-4 py-3 text-gray-900">{lead.numberOfLocations || '-'}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        statusColors[lead.status] || statusColors.new
-                      }`}
-                    >
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[lead.status] || statusColors.new}`}>
                       {statusLabels[lead.status] || lead.status}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/leads/${lead.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View
-                    </Link>
+                    <Link href={`/leads/${lead.id}`} className="text-blue-600 hover:text-blue-800 font-medium">View</Link>
                   </td>
                 </tr>
               ))}
