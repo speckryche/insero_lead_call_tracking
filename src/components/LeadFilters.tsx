@@ -92,6 +92,7 @@ export function LeadFilters({ currentSearch, currentStatus, currentSort }: LeadF
       >
         <option value="all">All Statuses</option>
         <option value="new">New</option>
+        <option value="left_vm_emailed">Left VM / Emailed</option>
         <option value="contacted">Contacted</option>
         <option value="meeting_set">Meeting Set</option>
         <option value="not_interested">Not Interested</option>

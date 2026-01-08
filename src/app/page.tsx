@@ -20,6 +20,7 @@ export default async function Dashboard({
 
   const statusColors: Record<string, string> = {
     new: 'bg-blue-100 text-blue-800',
+    left_vm_emailed: 'bg-orange-100 text-orange-800',
     contacted: 'bg-yellow-100 text-yellow-800',
     meeting_set: 'bg-green-100 text-green-800',
     not_interested: 'bg-gray-100 text-gray-800',
@@ -27,6 +28,7 @@ export default async function Dashboard({
 
   const statusLabels: Record<string, string> = {
     new: 'New',
+    left_vm_emailed: 'Left VM / Emailed',
     contacted: 'Contacted',
     meeting_set: 'Meeting Set',
     not_interested: 'Not Interested',
@@ -35,7 +37,7 @@ export default async function Dashboard({
   return (
     <div>
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-500">Total Leads</div>
@@ -43,6 +45,10 @@ export default async function Dashboard({
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
           <div className="text-sm text-gray-500">New</div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-orange-600">{stats.leftVmEmailed}</div>
+          <div className="text-sm text-gray-500">Left VM / Emailed</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="text-2xl font-bold text-yellow-600">{stats.contacted}</div>

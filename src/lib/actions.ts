@@ -110,6 +110,7 @@ export async function getStats() {
   const stats = {
     total: allLeads.length,
     new: allLeads.filter((l) => l.status === 'new').length,
+    leftVmEmailed: allLeads.filter((l) => l.status === 'left_vm_emailed').length,
     contacted: allLeads.filter((l) => l.status === 'contacted').length,
     meetingSet: allLeads.filter((l) => l.status === 'meeting_set').length,
     notInterested: allLeads.filter((l) => l.status === 'not_interested').length,
