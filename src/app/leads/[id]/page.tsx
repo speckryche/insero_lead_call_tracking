@@ -1,15 +1,25 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getLead, getLeadActivities } from '@/lib/actions';
+import { getUser } from '@/lib/auth-actions';
 import { StatusSelector } from '@/components/StatusSelector';
 import { ActivityForm } from '@/components/ActivityForm';
 import { ActivityList } from '@/components/ActivityList';
 
 export const dynamic = 'force-dynamic';
 
+async function requireAuth() {
+  const user = await getUser();
+  if (!user) {
+    redirect('/login');
+  }
+  return user;
+}
+
 type Params = Promise<{ id: string }>;
 
 export default async function LeadDetailPage({ params }: { params: Params }) {
+  await requireAuth();
   const { id } = await params;
   const leadId = parseInt(id, 10);
 

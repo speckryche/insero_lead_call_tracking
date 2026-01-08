@@ -1,8 +1,18 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getLeads, getStats } from '@/lib/actions';
 import { LeadFilters } from '@/components/LeadFilters';
+import { getUser } from '@/lib/auth-actions';
 
 export const dynamic = 'force-dynamic';
+
+async function requireAuth() {
+  const user = await getUser();
+  if (!user) {
+    redirect('/login');
+  }
+  return user;
+}
 
 type SearchParams = Promise<{ search?: string; status?: string; sort?: string }>;
 
@@ -11,6 +21,7 @@ export default async function Dashboard({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAuth();
   const params = await searchParams;
   const search = params.search || '';
   const status = params.status || 'all';
