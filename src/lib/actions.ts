@@ -81,10 +81,10 @@ export async function addActivity(data: NewActivity) {
     ...data,
     createdAt: new Date().toISOString(),
   });
-  // Also update lead status to 'contacted' if it's still 'new'
+  // Also update lead status to 'left_vm_emailed' if it's still 'new'
   const lead = await getLead(data.leadId);
   if (lead && lead.status === 'new') {
-    await updateLeadStatus(data.leadId, 'contacted');
+    await updateLeadStatus(data.leadId, 'left_vm_emailed');
   }
   revalidatePath(`/leads/${data.leadId}`);
 }
