@@ -1,4 +1,4 @@
-import { NewLead } from '@/db/schema';
+import { NewLead } from '@/db';
 
 // Map CSV headers to database field names
 const headerMap: Record<string, keyof NewLead> = {

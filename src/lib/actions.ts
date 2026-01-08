@@ -1,27 +1,24 @@
 'use server';
 
-import { db } from '@/db';
-import { leads, activities, NewLead, NewActivity } from '@/db/schema';
-import { eq, desc, ilike, or } from 'drizzle-orm';
+import { db, leads, activities, NewLead, NewActivity } from '@/db';
+import { eq, desc, like, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export async function getLeads(search?: string, status?: string) {
-  let query = db.select().from(leads).orderBy(desc(leads.createdAt));
-
   if (search) {
-    const searchLower = `%${search}%`;
+    const searchPattern = `%${search.toLowerCase()}%`;
     return db
       .select()
       .from(leads)
       .where(
         or(
-          ilike(leads.companyName, searchLower),
-          ilike(leads.firstName, searchLower),
-          ilike(leads.lastName, searchLower),
-          ilike(leads.emailAddress, searchLower)
+          like(leads.companyName, searchPattern),
+          like(leads.firstName, searchPattern),
+          like(leads.lastName, searchPattern),
+          like(leads.emailAddress, searchPattern)
         )
       )
-      .orderBy(desc(leads.createdAt));
+      .orderBy(desc(leads.id));
   }
 
   if (status && status !== 'all') {
@@ -29,10 +26,10 @@ export async function getLeads(search?: string, status?: string) {
       .select()
       .from(leads)
       .where(eq(leads.status, status))
-      .orderBy(desc(leads.createdAt));
+      .orderBy(desc(leads.id));
   }
 
-  return query;
+  return db.select().from(leads).orderBy(desc(leads.id));
 }
 
 export async function getLead(id: number) {
@@ -45,20 +42,23 @@ export async function getLeadActivities(leadId: number) {
     .select()
     .from(activities)
     .where(eq(activities.leadId, leadId))
-    .orderBy(desc(activities.createdAt));
+    .orderBy(desc(activities.id));
 }
 
 export async function updateLeadStatus(id: number, status: string) {
   await db
     .update(leads)
-    .set({ status, updatedAt: new Date() })
+    .set({ status, updatedAt: new Date().toISOString() })
     .where(eq(leads.id, id));
   revalidatePath('/');
   revalidatePath(`/leads/${id}`);
 }
 
 export async function addActivity(data: NewActivity) {
-  await db.insert(activities).values(data);
+  await db.insert(activities).values({
+    ...data,
+    createdAt: new Date().toISOString(),
+  });
   // Also update lead status to 'contacted' if it's still 'new'
   const lead = await getLead(data.leadId);
   if (lead && lead.status === 'new') {
@@ -70,7 +70,14 @@ export async function addActivity(data: NewActivity) {
 export async function importLeads(leadsData: NewLead[]) {
   if (leadsData.length === 0) return { count: 0 };
 
-  await db.insert(leads).values(leadsData);
+  const now = new Date().toISOString();
+  const leadsWithTimestamps = leadsData.map((lead) => ({
+    ...lead,
+    createdAt: now,
+    updatedAt: now,
+  }));
+
+  await db.insert(leads).values(leadsWithTimestamps);
   revalidatePath('/');
   return { count: leadsData.length };
 }
