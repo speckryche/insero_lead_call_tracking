@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoutButton } from "@/components/LogoutButton";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({
               >
                 Import CSV
               </Link>
+              <LogoutButton />
             </div>
           </div>
         </nav>
