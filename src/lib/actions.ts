@@ -6,7 +6,6 @@ import { revalidatePath } from 'next/cache';
 export async function getLeads(search?: string, status?: string, sort?: string) {
   let query = supabase.from('leads').select('*');
 
-  // Apply search filter
   if (search) {
     const searchPattern = `%${search.toLowerCase()}%`;
     query = query.or(
@@ -14,12 +13,10 @@ export async function getLeads(search?: string, status?: string, sort?: string) 
     );
   }
 
-  // Apply status filter
   if (status && status !== 'all') {
     query = query.eq('status', status);
   }
 
-  // Apply sorting
   switch (sort) {
     case 'employees_asc':
       query = query.order('employees', { ascending: true });
@@ -46,7 +43,6 @@ export async function getLeads(search?: string, status?: string, sort?: string) 
   const { data, error } = await query;
   if (error) throw error;
 
-  // Map database columns to camelCase for frontend
   return (data || []).map(mapLeadToCamelCase);
 }
 
@@ -58,7 +54,7 @@ export async function getLead(id: number) {
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
+    if (error.code === 'PGRST116') return null;
     throw error;
   }
 
@@ -104,7 +100,6 @@ export async function addActivity(data: NewActivity) {
 
   if (error) throw error;
 
-  // Also update lead status to 'left_vm_emailed' if it's still 'new'
   const lead = await getLead(data.lead_id);
   if (lead && lead.status === 'new') {
     await updateLeadStatus(data.lead_id, 'left_vm_emailed');
@@ -116,7 +111,6 @@ export async function addActivity(data: NewActivity) {
 export async function importLeads(leadsData: NewLead[]) {
   if (leadsData.length === 0) return { count: 0 };
 
-  // Map camelCase to snake_case for database
   const dbLeads = leadsData.map((lead) => ({
     company_name: lead.company_name,
     number_of_locations: lead.number_of_locations,
@@ -160,7 +154,7 @@ export async function getStats() {
 
   const allLeads = data || [];
 
-  const stats = {
+  return {
     total: allLeads.length,
     new: allLeads.filter((l) => l.status === 'new').length,
     leftVmEmailed: allLeads.filter((l) => l.status === 'left_vm_emailed').length,
@@ -168,8 +162,6 @@ export async function getStats() {
     meetingSet: allLeads.filter((l) => l.status === 'meeting_set').length,
     notInterested: allLeads.filter((l) => l.status === 'not_interested').length,
   };
-
-  return stats;
 }
 
 export async function deleteLead(id: number) {
@@ -180,7 +172,6 @@ export async function deleteLead(id: number) {
   revalidatePath('/');
 }
 
-// Helper function to map database columns to camelCase
 function mapLeadToCamelCase(lead: Lead) {
   return {
     id: lead.id,
