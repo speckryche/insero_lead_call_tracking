@@ -1,31 +1,31 @@
-import { NewLead } from '@/db';
+import { NewLead } from './supabase';
 
-// Map CSV headers to database field names
+// Map CSV headers to database field names (snake_case)
 const headerMap: Record<string, keyof NewLead> = {
-  'Company Name': 'companyName',
-  'Number of Locations': 'numberOfLocations',
+  'Company Name': 'company_name',
+  'Number of Locations': 'number_of_locations',
   'Employees': 'employees',
   'Website': 'website',
-  'First Name': 'firstName',
-  'Last Name': 'lastName',
-  'Job Title': 'jobTitle',
-  'Job Start Date': 'jobStartDate',
-  'Job Function': 'jobFunction',
-  'Company HQ Phone': 'companyHqPhone',
-  'Direct Phone Number': 'directPhoneNumber',
-  'Mobile phone': 'mobilePhone',
-  'Email Address': 'emailAddress',
-  'LinkedIn Contact Profile URL': 'linkedinContactProfileUrl',
-  'Company Street Address': 'companyStreetAddress',
-  'Company City': 'companyCity',
-  'Company State': 'companyState',
-  'Company Zip Code': 'companyZipCode',
-  'Annual Revenue': 'annualRevenue',
-  'Primary Industry': 'primaryIndustry',
-  'Primary Sub-Industry': 'primarySubIndustry',
-  'LinkedIn Company Profile URL': 'linkedinCompanyProfileUrl',
-  'Facebook Company Profile URL': 'facebookCompanyProfileUrl',
-  'Twitter Company Profile URL': 'twitterCompanyProfileUrl',
+  'First Name': 'first_name',
+  'Last Name': 'last_name',
+  'Job Title': 'job_title',
+  'Job Start Date': 'job_start_date',
+  'Job Function': 'job_function',
+  'Company HQ Phone': 'company_hq_phone',
+  'Direct Phone Number': 'direct_phone_number',
+  'Mobile phone': 'mobile_phone',
+  'Email Address': 'email_address',
+  'LinkedIn Contact Profile URL': 'linkedin_contact_profile_url',
+  'Company Street Address': 'company_street_address',
+  'Company City': 'company_city',
+  'Company State': 'company_state',
+  'Company Zip Code': 'company_zip_code',
+  'Annual Revenue': 'annual_revenue',
+  'Primary Industry': 'primary_industry',
+  'Primary Sub-Industry': 'primary_sub_industry',
+  'LinkedIn Company Profile URL': 'linkedin_company_profile_url',
+  'Facebook Company Profile URL': 'facebook_company_profile_url',
+  'Twitter Company Profile URL': 'twitter_company_profile_url',
 };
 
 export function parseCSV(csvText: string): NewLead[] {
@@ -52,7 +52,7 @@ export function parseCSV(csvText: string): NewLead[] {
     });
 
     // Only add if we have at least a company name
-    if (lead.companyName) {
+    if (lead.company_name) {
       lead.status = 'new';
       leads.push(lead as NewLead);
     }

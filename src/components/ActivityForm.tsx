@@ -19,8 +19,8 @@ export function ActivityForm({ leadId }: ActivityFormProps) {
 
     startTransition(async () => {
       await addActivity({
-        leadId,
-        contactMethod,
+        lead_id: leadId,
+        contact_method: contactMethod,
         notes: notes.trim(),
       });
       setNotes('');

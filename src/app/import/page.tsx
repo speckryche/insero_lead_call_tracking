@@ -10,7 +10,7 @@ export default function ImportPage() {
   const [csvText, setCsvText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [preview, setPreview] = useState<{ companyName: string; firstName?: string | null; lastName?: string | null }[]>([]);
+  const [preview, setPreview] = useState<{ company_name: string; first_name?: string | null; last_name?: string | null }[]>([]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,9 +35,9 @@ export default function ImportPage() {
         return;
       }
       setPreview(leads.slice(0, 5).map((l) => ({
-        companyName: l.companyName,
-        firstName: l.firstName,
-        lastName: l.lastName,
+        company_name: l.company_name,
+        first_name: l.first_name,
+        last_name: l.last_name,
       })));
     } catch {
       setError('Error parsing CSV. Please check the format.');
@@ -147,9 +147,9 @@ export default function ImportPage() {
             <tbody className="divide-y divide-gray-200">
               {preview.map((lead, i) => (
                 <tr key={i}>
-                  <td className="px-4 py-2 text-gray-900">{lead.companyName}</td>
+                  <td className="px-4 py-2 text-gray-900">{lead.company_name}</td>
                   <td className="px-4 py-2 text-gray-600">
-                    {lead.firstName} {lead.lastName}
+                    {lead.first_name} {lead.last_name}
                   </td>
                 </tr>
               ))}
