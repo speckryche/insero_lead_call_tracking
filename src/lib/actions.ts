@@ -1,10 +1,32 @@
 'use server';
 
 import { db, leads, activities, NewLead, NewActivity } from '@/db';
-import { eq, desc, like, or } from 'drizzle-orm';
+import { eq, desc, asc, like, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
-export async function getLeads(search?: string, status?: string) {
+export async function getLeads(search?: string, status?: string, sort?: string) {
+  // Determine sort column and direction
+  const getSortOrder = () => {
+    switch (sort) {
+      case 'employees_asc':
+        return asc(leads.employees);
+      case 'employees_desc':
+        return desc(leads.employees);
+      case 'locations_asc':
+        return asc(leads.numberOfLocations);
+      case 'locations_desc':
+        return desc(leads.numberOfLocations);
+      case 'city_asc':
+        return asc(leads.companyCity);
+      case 'city_desc':
+        return desc(leads.companyCity);
+      default:
+        return desc(leads.id);
+    }
+  };
+
+  const sortOrder = getSortOrder();
+
   if (search) {
     const searchPattern = `%${search.toLowerCase()}%`;
     return db
@@ -18,7 +40,7 @@ export async function getLeads(search?: string, status?: string) {
           like(leads.emailAddress, searchPattern)
         )
       )
-      .orderBy(desc(leads.id));
+      .orderBy(sortOrder);
   }
 
   if (status && status !== 'all') {
@@ -26,10 +48,10 @@ export async function getLeads(search?: string, status?: string) {
       .select()
       .from(leads)
       .where(eq(leads.status, status))
-      .orderBy(desc(leads.id));
+      .orderBy(sortOrder);
   }
 
-  return db.select().from(leads).orderBy(desc(leads.id));
+  return db.select().from(leads).orderBy(sortOrder);
 }
 
 export async function getLead(id: number) {
