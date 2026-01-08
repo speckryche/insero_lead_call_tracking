@@ -38,6 +38,7 @@ export default async function LeadDetailPage({ params }: { params: Params }) {
 
   const statusLabels: Record<string, string> = {
     new: 'New',
+    left_vm_emailed: 'Left VM / Emailed',
     contacted: 'Contacted',
     meeting_set: 'Meeting Set',
     not_interested: 'Not Interested',
@@ -46,10 +47,10 @@ export default async function LeadDetailPage({ params }: { params: Params }) {
   return (
     <div>
       <Link
-        href="/"
+        href={`/campaigns/${lead.campaignId}`}
         className="text-blue-600 hover:text-blue-800 font-medium mb-6 inline-block"
       >
-        ← Back to Leads
+        ← Back to Campaign
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -217,6 +218,21 @@ export default async function LeadDetailPage({ params }: { params: Params }) {
               )}
             </div>
           </div>
+
+          {/* Extra Fields (from unmapped CSV columns) */}
+          {lead.extraFields && Object.keys(lead.extraFields).length > 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(lead.extraFields).map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-sm text-gray-500">{key}</p>
+                    <p className="font-medium text-gray-900">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right column - Activity log */}

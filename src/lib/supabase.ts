@@ -6,8 +6,15 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Types for our database tables
+export interface Campaign {
+  id: number;
+  name: string;
+  created_at: string | null;
+}
+
 export interface Lead {
   id: number;
+  campaign_id: number;
   company_name: string;
   number_of_locations: string | null;
   employees: string | null;
@@ -33,6 +40,7 @@ export interface Lead {
   facebook_company_profile_url: string | null;
   twitter_company_profile_url: string | null;
   status: string;
+  extra_fields: Record<string, string> | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -45,5 +53,6 @@ export interface Activity {
   created_at: string | null;
 }
 
+export type NewCampaign = Omit<Campaign, 'id' | 'created_at'>;
 export type NewLead = Omit<Lead, 'id' | 'created_at' | 'updated_at'>;
 export type NewActivity = Omit<Activity, 'id' | 'created_at'>;
