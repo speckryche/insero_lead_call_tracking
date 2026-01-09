@@ -1,10 +1,67 @@
 'use server';
 
-import { supabase, Lead, NewLead, NewActivity } from './supabase';
+import { supabase, Lead, NewLead, NewActivity, Campaign } from './supabase';
 import { revalidatePath } from 'next/cache';
 
-export async function getLeads(search?: string, status?: string, sort?: string) {
-  let query = supabase.from('leads').select('*');
+// Campaign functions
+export async function getCampaigns() {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getCampaign(id: number) {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data;
+}
+
+export async function createCampaign(name: string) {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .insert({ name })
+    .select()
+    .single();
+
+  if (error) throw error;
+  revalidatePath('/');
+  return data;
+}
+
+export async function getCampaignStats(campaignId: number) {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('status')
+    .eq('campaign_id', campaignId);
+
+  if (error) throw error;
+
+  const allLeads = data || [];
+  return {
+    total: allLeads.length,
+    new: allLeads.filter((l) => l.status === 'new').length,
+    leftVmEmailed: allLeads.filter((l) => l.status === 'left_vm_emailed').length,
+    contacted: allLeads.filter((l) => l.status === 'contacted').length,
+    meetingSet: allLeads.filter((l) => l.status === 'meeting_set').length,
+    notInterested: allLeads.filter((l) => l.status === 'not_interested').length,
+  };
+}
+
+// Lead functions
+export async function getLeads(campaignId: number, search?: string, status?: string, sort?: string) {
+  let query = supabase.from('leads').select('*').eq('campaign_id', campaignId);
 
   if (search) {
     const searchPattern = `%${search.toLowerCase()}%`;
@@ -80,6 +137,7 @@ export async function getLeadActivities(leadId: number) {
 }
 
 export async function updateLeadStatus(id: number, status: string) {
+  const lead = await getLead(id);
   const { error } = await supabase
     .from('leads')
     .update({ status, updated_at: new Date().toISOString() })
@@ -88,6 +146,9 @@ export async function updateLeadStatus(id: number, status: string) {
   if (error) throw error;
 
   revalidatePath('/');
+  if (lead) {
+    revalidatePath(`/campaigns/${lead.campaignId}`);
+  }
   revalidatePath(`/leads/${id}`);
 }
 
@@ -108,35 +169,43 @@ export async function addActivity(data: NewActivity) {
   revalidatePath(`/leads/${data.lead_id}`);
 }
 
-export async function importLeads(leadsData: NewLead[]) {
+export interface ImportLeadData {
+  campaignId: number;
+  mappedData: Record<string, string>;
+  extraFields: Record<string, string>;
+}
+
+export async function importLeads(campaignId: number, leadsData: ImportLeadData[]) {
   if (leadsData.length === 0) return { count: 0 };
 
   const dbLeads = leadsData.map((lead) => ({
-    company_name: lead.company_name,
-    number_of_locations: lead.number_of_locations,
-    employees: lead.employees,
-    website: lead.website,
-    first_name: lead.first_name,
-    last_name: lead.last_name,
-    job_title: lead.job_title,
-    job_start_date: lead.job_start_date,
-    job_function: lead.job_function,
-    company_hq_phone: lead.company_hq_phone,
-    direct_phone_number: lead.direct_phone_number,
-    mobile_phone: lead.mobile_phone,
-    email_address: lead.email_address,
-    linkedin_contact_profile_url: lead.linkedin_contact_profile_url,
-    company_street_address: lead.company_street_address,
-    company_city: lead.company_city,
-    company_state: lead.company_state,
-    company_zip_code: lead.company_zip_code,
-    annual_revenue: lead.annual_revenue,
-    primary_industry: lead.primary_industry,
-    primary_sub_industry: lead.primary_sub_industry,
-    linkedin_company_profile_url: lead.linkedin_company_profile_url,
-    facebook_company_profile_url: lead.facebook_company_profile_url,
-    twitter_company_profile_url: lead.twitter_company_profile_url,
-    status: lead.status || 'new',
+    campaign_id: campaignId,
+    company_name: lead.mappedData.company_name || 'Unknown Company',
+    number_of_locations: lead.mappedData.number_of_locations || null,
+    employees: lead.mappedData.employees || null,
+    website: lead.mappedData.website || null,
+    first_name: lead.mappedData.first_name || null,
+    last_name: lead.mappedData.last_name || null,
+    job_title: lead.mappedData.job_title || null,
+    job_start_date: lead.mappedData.job_start_date || null,
+    job_function: lead.mappedData.job_function || null,
+    company_hq_phone: lead.mappedData.company_hq_phone || null,
+    direct_phone_number: lead.mappedData.direct_phone_number || null,
+    mobile_phone: lead.mappedData.mobile_phone || null,
+    email_address: lead.mappedData.email_address || null,
+    linkedin_contact_profile_url: lead.mappedData.linkedin_contact_profile_url || null,
+    company_street_address: lead.mappedData.company_street_address || null,
+    company_city: lead.mappedData.company_city || null,
+    company_state: lead.mappedData.company_state || null,
+    company_zip_code: lead.mappedData.company_zip_code || null,
+    annual_revenue: lead.mappedData.annual_revenue || null,
+    primary_industry: lead.mappedData.primary_industry || null,
+    primary_sub_industry: lead.mappedData.primary_sub_industry || null,
+    linkedin_company_profile_url: lead.mappedData.linkedin_company_profile_url || null,
+    facebook_company_profile_url: lead.mappedData.facebook_company_profile_url || null,
+    twitter_company_profile_url: lead.mappedData.twitter_company_profile_url || null,
+    status: 'new',
+    extra_fields: Object.keys(lead.extraFields).length > 0 ? lead.extraFields : null,
   }));
 
   const { error } = await supabase.from('leads').insert(dbLeads);
@@ -144,37 +213,26 @@ export async function importLeads(leadsData: NewLead[]) {
   if (error) throw error;
 
   revalidatePath('/');
+  revalidatePath(`/campaigns/${campaignId}`);
   return { count: leadsData.length };
 }
 
-export async function getStats() {
-  const { data, error } = await supabase.from('leads').select('status');
-
-  if (error) throw error;
-
-  const allLeads = data || [];
-
-  return {
-    total: allLeads.length,
-    new: allLeads.filter((l) => l.status === 'new').length,
-    leftVmEmailed: allLeads.filter((l) => l.status === 'left_vm_emailed').length,
-    contacted: allLeads.filter((l) => l.status === 'contacted').length,
-    meetingSet: allLeads.filter((l) => l.status === 'meeting_set').length,
-    notInterested: allLeads.filter((l) => l.status === 'not_interested').length,
-  };
-}
-
 export async function deleteLead(id: number) {
+  const lead = await getLead(id);
   const { error } = await supabase.from('leads').delete().eq('id', id);
 
   if (error) throw error;
 
   revalidatePath('/');
+  if (lead) {
+    revalidatePath(`/campaigns/${lead.campaignId}`);
+  }
 }
 
 function mapLeadToCamelCase(lead: Lead) {
   return {
     id: lead.id,
+    campaignId: lead.campaign_id,
     companyName: lead.company_name,
     numberOfLocations: lead.number_of_locations,
     employees: lead.employees,
@@ -200,6 +258,7 @@ function mapLeadToCamelCase(lead: Lead) {
     facebookCompanyProfileUrl: lead.facebook_company_profile_url,
     twitterCompanyProfileUrl: lead.twitter_company_profile_url,
     status: lead.status,
+    extraFields: lead.extra_fields,
     createdAt: lead.created_at,
     updatedAt: lead.updated_at,
   };

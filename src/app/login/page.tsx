@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { signIn } from '@/lib/auth-actions';
 
 export default function LoginPage() {
@@ -11,7 +10,9 @@ export default function LoginPage() {
   async function handleSubmit(formData: FormData) {
     setIsLoading(true);
     setError(null);
+
     const result = await signIn(formData);
+
     if (result?.error) {
       setError(result.error);
       setIsLoading(false);
@@ -21,8 +22,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
-        <div className="flex flex-col items-center">
-          <Image src="/logo.png" alt="Logo" width={160} height={160} className="mb-4" />
+        <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
             Sales Call Tracker
           </h2>

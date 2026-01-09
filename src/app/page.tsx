@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getLeads, getStats } from '@/lib/actions';
-import { LeadFilters } from '@/components/LeadFilters';
+import { getCampaigns, getCampaignStats } from '@/lib/actions';
 import { getUser } from '@/lib/auth-actions';
 
 export const dynamic = 'force-dynamic';
@@ -14,120 +13,85 @@ async function requireAuth() {
   return user;
 }
 
-type SearchParams = Promise<{ search?: string; status?: string; sort?: string }>;
-
-export default async function Dashboard({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function CampaignsPage() {
   await requireAuth();
-  const params = await searchParams;
-  const search = params.search || '';
-  const status = params.status || 'all';
-  const sort = params.sort || 'default';
+  const campaigns = await getCampaigns();
 
-  const [leads, stats] = await Promise.all([getLeads(search, status, sort), getStats()]);
-
-  const statusColors: Record<string, string> = {
-    new: 'bg-blue-100 text-blue-800',
-    left_vm_emailed: 'bg-orange-100 text-orange-800',
-    contacted: 'bg-yellow-100 text-yellow-800',
-    meeting_set: 'bg-green-100 text-green-800',
-    not_interested: 'bg-gray-100 text-gray-800',
-  };
-
-  const statusLabels: Record<string, string> = {
-    new: 'New',
-    left_vm_emailed: 'Left VM / Emailed',
-    contacted: 'Contacted',
-    meeting_set: 'Meeting Set',
-    not_interested: 'Not Interested',
-  };
+  // Get stats for each campaign
+  const campaignsWithStats = await Promise.all(
+    campaigns.map(async (campaign) => {
+      const stats = await getCampaignStats(campaign.id);
+      return { ...campaign, stats };
+    })
+  );
 
   return (
     <div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          <div className="text-sm text-gray-500">Total Leads</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
-          <div className="text-sm text-gray-500">New</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-orange-600">{stats.leftVmEmailed}</div>
-          <div className="text-sm text-gray-500">Left VM / Emailed</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-yellow-600">{stats.contacted}</div>
-          <div className="text-sm text-gray-500">Contacted</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.meetingSet}</div>
-          <div className="text-sm text-gray-500">Meeting Set</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-gray-600">{stats.notInterested}</div>
-          <div className="text-sm text-gray-500">Not Interested</div>
-        </div>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
+        <Link
+          href="/import"
+          className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+        >
+          Import CSV
+        </Link>
       </div>
 
-      <LeadFilters currentSearch={search} currentStatus={status} currentSort={sort} />
+      {campaignsWithStats.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No campaigns yet</h2>
+          <p className="text-gray-600 mb-6">Import your first CSV to create a campaign.</p>
+          <Link
+            href="/import"
+            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+          >
+            Import CSV
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {campaignsWithStats.map((campaign) => (
+            <Link
+              key={campaign.id}
+              href={`/campaigns/${campaign.id}`}
+              className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+            >
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{campaign.name}</h2>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto">
-        {leads.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p className="mb-4">No leads found.</p>
-            <Link href="/import" className="text-blue-600 hover:text-blue-800 font-medium">
-              Import your first CSV →
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{campaign.stats.total}</div>
+                  <div className="text-xs text-gray-500">Total</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{campaign.stats.meetingSet}</div>
+                  <div className="text-xs text-gray-500">Meetings</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{campaign.stats.new}</div>
+                  <div className="text-xs text-gray-500">New</div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 text-xs">
+                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded">
+                  {campaign.stats.leftVmEmailed} Left VM
+                </span>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                  {campaign.stats.contacted} Contacted
+                </span>
+                <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded">
+                  {campaign.stats.notInterested} Not Int.
+                </span>
+              </div>
+
+              <div className="mt-4 text-sm text-gray-500">
+                Created {new Date(campaign.created_at!).toLocaleDateString()}
+              </div>
             </Link>
-          </div>
-        ) : (
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Emp</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loc</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {leads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{lead.companyName}</div>
-                    <div className="text-xs text-gray-500">{lead.primaryIndustry}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-gray-900">{lead.firstName} {lead.lastName}</div>
-                    <div className="text-xs text-gray-500">{lead.jobTitle}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-gray-900">{lead.companyCity}</div>
-                    <div className="text-xs text-gray-500">{lead.companyState}</div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-900">{lead.employees || '-'}</td>
-                  <td className="px-4 py-3 text-gray-900">{lead.numberOfLocations || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColors[lead.status] || statusColors.new}`}>
-                      {statusLabels[lead.status] || lead.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/leads/${lead.id}`} className="text-blue-600 hover:text-blue-800 font-medium">View</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
